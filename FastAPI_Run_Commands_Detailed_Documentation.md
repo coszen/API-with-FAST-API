@@ -1335,3 +1335,885 @@ FastAPI
    ▼
 Your Python route function
 ```
+
+Yes. One small correction first: you mean **Uvicorn**, not Unicorn. 🙂
+
+Here is a Markdown-compatible continuation you can append to your existing document:
+
+# 31. Running FastAPI by Importing Uvicorn in `server.py`
+
+There is another way to run a FastAPI application that is different from both:
+
+```zsh
+fastapi dev server.py
+```
+
+and:
+
+```zsh
+uvicorn server:app --reload
+```
+
+You can start Uvicorn **directly from Python code**.
+
+For example:
+
+```python
+from fastapi import FastAPI
+import uvicorn
+
+app = FastAPI()
+
+@app.get("/")
+def home():
+    return {"message": "Hello"}
+
+if __name__ == "__main__":
+    uvicorn.run(app)
+```
+
+Then you run:
+
+```zsh
+python server.py
+```
+
+Here, Python executes `server.py`, and the code inside the file starts Uvicorn.
+
+---
+
+# 32. What Is Happening in `python server.py`?
+
+When you execute:
+
+```zsh
+python server.py
+```
+
+Python runs the file from top to bottom.
+
+Consider:
+
+```python
+from fastapi import FastAPI
+import uvicorn
+
+app = FastAPI()
+
+@app.get("/")
+def home():
+    return {"message": "Hello"}
+
+if __name__ == "__main__":
+    uvicorn.run(app)
+```
+
+The sequence is:
+
+```text
+python server.py
+       │
+       ▼
+Python executes server.py
+       │
+       ├── import FastAPI
+       │
+       ├── import uvicorn
+       │
+       ├── create FastAPI application
+       │
+       └── uvicorn.run(app)
+                  │
+                  ▼
+              Uvicorn
+                  │
+                  ▼
+              FastAPI app
+```
+
+So in this approach, **your Python code explicitly tells Uvicorn to start**.
+
+---
+
+# 33. What Does `uvicorn.run(app)` Mean?
+
+This line:
+
+```python
+uvicorn.run(app)
+```
+
+tells Uvicorn:
+
+> Start a Uvicorn server and run this FastAPI application.
+
+The `app` here is the actual Python object:
+
+```python
+app = FastAPI()
+```
+
+So Uvicorn doesn't need to find the application by an import string.
+
+You are directly passing the object to it:
+
+```text
+app object
+   │
+   ▼
+uvicorn.run()
+   │
+   ▼
+Uvicorn server
+```
+
+---
+
+# 34. Comparing the Three Approaches
+
+There are three common ways to start the same application.
+
+## Approach 1 — FastAPI CLI
+
+```zsh
+fastapi dev server.py
+```
+
+The FastAPI CLI finds the application and starts the development server.
+
+```text
+Terminal
+   │
+   ▼
+FastAPI CLI
+   │
+   ▼
+Uvicorn
+   │
+   ▼
+FastAPI app
+```
+
+---
+
+## Approach 2 — Uvicorn CLI
+
+```zsh
+uvicorn server:app --reload
+```
+
+Here, you directly start Uvicorn from the terminal.
+
+```text
+Terminal
+   │
+   ▼
+Uvicorn CLI
+   │
+   │ imports server
+   │ finds app
+   ▼
+FastAPI app
+```
+
+The important part is:
+
+```text
+server:app
+```
+
+which means:
+
+```text
+server.py → app
+```
+
+---
+
+## Approach 3 — Uvicorn From Python
+
+```zsh
+python server.py
+```
+
+Inside `server.py`:
+
+```python
+import uvicorn
+
+if __name__ == "__main__":
+    uvicorn.run(app)
+```
+
+The flow is:
+
+```text
+Terminal
+   │
+   │ python server.py
+   ▼
+Python
+   │
+   ▼
+server.py
+   │
+   │ uvicorn.run(app)
+   ▼
+Uvicorn
+   │
+   ▼
+FastAPI app
+```
+
+---
+
+# 35. The Key Difference
+
+The biggest difference is **who starts Uvicorn and how the FastAPI application is supplied to Uvicorn**.
+
+### FastAPI CLI
+
+```zsh
+fastapi dev server.py
+```
+
+You give the **Python file** to the FastAPI CLI.
+
+```text
+server.py
+   ↓
+FastAPI CLI
+   ↓
+Uvicorn
+   ↓
+FastAPI app
+```
+
+### Uvicorn CLI
+
+```zsh
+uvicorn server:app --reload
+```
+
+You give Uvicorn an **import string**:
+
+```text
+server:app
+```
+
+Uvicorn imports the module and gets the application object.
+
+```text
+server:app
+   ↓
+Uvicorn
+   ↓
+FastAPI app
+```
+
+### Python + `uvicorn.run()`
+
+```zsh
+python server.py
+```
+
+Your Python code directly passes the application object:
+
+```python
+uvicorn.run(app)
+```
+
+```text
+app object
+   ↓
+uvicorn.run(app)
+   ↓
+Uvicorn
+```
+
+---
+
+# 36. Import String vs Actual Object
+
+This distinction is very important.
+
+With:
+
+```zsh
+uvicorn server:app
+```
+
+you are essentially telling Uvicorn:
+
+> Go and import the `server` module, then find the `app` object inside it.
+
+Conceptually:
+
+```python
+from server import app
+```
+
+With:
+
+```python
+uvicorn.run(app)
+```
+
+you are saying:
+
+> Here is the actual application object. Run it.
+
+So:
+
+```text
+uvicorn server:app
+```
+
+uses an **import string**.
+
+Whereas:
+
+```python
+uvicorn.run(app)
+```
+
+uses the **actual Python object**.
+
+---
+
+# 37. Why Use `if __name__ == "__main__"`?
+
+You will normally see:
+
+```python
+if __name__ == "__main__":
+    uvicorn.run(app)
+```
+
+rather than simply:
+
+```python
+uvicorn.run(app)
+```
+
+This is important because Python files can be either:
+
+1. Executed directly, or
+2. Imported by another Python file.
+
+When you execute:
+
+```zsh
+python server.py
+```
+
+Python sets:
+
+```python
+__name__ = "__main__"
+```
+
+Therefore:
+
+```python
+if __name__ == "__main__":
+```
+
+becomes true and Uvicorn starts.
+
+But if another file does:
+
+```python
+import server
+```
+
+then:
+
+```python
+__name__
+```
+
+inside `server.py` is:
+
+```text
+server
+```
+
+not:
+
+```text
+__main__
+```
+
+Therefore:
+
+```python
+uvicorn.run(app)
+```
+
+doesn't automatically execute.
+
+This prevents the server from unintentionally starting whenever the module is imported.
+
+---
+
+# 38. Adding `--reload` Programmatically
+
+You can also enable reload from Python:
+
+```python
+import uvicorn
+
+if __name__ == "__main__":
+    uvicorn.run(
+        app,
+        reload=True
+    )
+```
+
+Then:
+
+```zsh
+python server.py
+```
+
+starts Uvicorn with reload enabled.
+
+Conceptually this is similar to:
+
+```zsh
+uvicorn server:app --reload
+```
+
+but the configuration is being supplied through Python instead of command-line arguments.
+
+---
+
+# 39. Adding Host and Port
+
+You can configure Uvicorn from Python as well.
+
+For example:
+
+```python
+import uvicorn
+
+if __name__ == "__main__":
+    uvicorn.run(
+        app,
+        host="127.0.0.1",
+        port=8000
+    )
+```
+
+Then run:
+
+```zsh
+python server.py
+```
+
+The equivalent command-line approach would be:
+
+```zsh
+uvicorn server:app --host 127.0.0.1 --port 8000
+```
+
+So Uvicorn provides configuration through both:
+
+```text
+Command-line arguments
+```
+
+and:
+
+```text
+Python function arguments
+```
+
+---
+
+# 40. Side-by-Side Comparison
+
+Suppose we have:
+
+```python
+from fastapi import FastAPI
+
+app = FastAPI()
+
+@app.get("/")
+def home():
+    return {"message": "Hello"}
+```
+
+### Option A
+
+```zsh
+fastapi dev server.py
+```
+
+The FastAPI CLI handles starting the server.
+
+---
+
+### Option B
+
+```zsh
+uvicorn server:app --reload
+```
+
+Uvicorn is started directly from the terminal.
+
+`server:app` tells Uvicorn where the application is.
+
+---
+
+### Option C
+
+`server.py` contains:
+
+```python
+import uvicorn
+
+if __name__ == "__main__":
+    uvicorn.run(app, reload=True)
+```
+
+Then:
+
+```zsh
+python server.py
+```
+
+Python starts the file, and the file starts Uvicorn.
+
+---
+
+# 41. Visual Comparison
+
+```text
+                OPTION A
+        fastapi dev server.py
+                    │
+                    ▼
+             FastAPI CLI
+                    │
+                    ▼
+                Uvicorn
+                    │
+                    ▼
+              FastAPI app
+```
+
+```text
+                OPTION B
+        uvicorn server:app
+                    │
+                    ▼
+                Uvicorn
+                    │
+              imports server
+                    │
+              finds app
+                    ▼
+              FastAPI app
+```
+
+```text
+                OPTION C
+          python server.py
+                    │
+                    ▼
+                 Python
+                    │
+                    ▼
+              server.py
+                    │
+             uvicorn.run(app)
+                    │
+                    ▼
+                Uvicorn
+                    │
+                    ▼
+              FastAPI app
+```
+
+---
+
+# 42. Why Would Someone Use `uvicorn.run(app)`?
+
+For a simple FastAPI project, you don't necessarily need this approach.
+
+The CLI approach is often simpler:
+
+```zsh
+fastapi dev server.py
+```
+
+or:
+
+```zsh
+uvicorn server:app --reload
+```
+
+However, starting Uvicorn programmatically can be useful when you want to configure or control the server from Python code.
+
+For example:
+
+```python
+uvicorn.run(
+    app,
+    host="127.0.0.1",
+    port=8000,
+    reload=True
+)
+```
+
+This puts the server configuration directly in Python.
+
+It can also be convenient for scripts or certain development setups.
+
+---
+
+# 43. Important Difference When Using Reload
+
+There is an important subtlety when using:
+
+```python
+uvicorn.run(app, reload=True)
+```
+
+Uvicorn's reload mechanism needs to manage the application process and reload the application when files change.
+
+For reload-related configurations, Uvicorn generally recommends using the import-string form:
+
+```python
+uvicorn.run(
+    "server:app",
+    reload=True
+)
+```
+
+instead of directly passing:
+
+```python
+uvicorn.run(
+    app,
+    reload=True
+)
+```
+
+when the application needs to be reloaded.
+
+Therefore, if you are simply learning the basic concept:
+
+```python
+uvicorn.run(app)
+```
+
+is easy to understand.
+
+For a reload-enabled development setup, the CLI form:
+
+```zsh
+uvicorn server:app --reload
+```
+
+is often the cleaner approach.
+
+---
+
+# 44. Does `uvicorn.run(app)` Replace FastAPI?
+
+No.
+
+This is another important distinction.
+
+You still have:
+
+```python
+app = FastAPI()
+```
+
+FastAPI is still the application.
+
+Uvicorn is still the server.
+
+The only difference is **how the server is started**.
+
+```text
+FastAPI
+   │
+   │ creates
+   ▼
+app object
+   │
+   │ passed to
+   ▼
+uvicorn.run(app)
+   │
+   ▼
+Uvicorn
+```
+
+---
+
+# 45. Does This Change ASGI?
+
+No.
+
+The ASGI relationship remains the same.
+
+Whether you start the application using:
+
+```zsh
+fastapi dev server.py
+```
+
+or:
+
+```zsh
+uvicorn server:app
+```
+
+or:
+
+```python
+uvicorn.run(app)
+```
+
+the underlying architecture is still:
+
+```text
+Client
+   │
+   │ HTTP
+   ▼
+Uvicorn
+   │
+   │ ASGI
+   ▼
+FastAPI
+   │
+   ▼
+Your route function
+```
+
+The starting mechanism has changed.
+
+The FastAPI/Uvicorn/ASGI architecture has not.
+
+---
+
+# 46. One Simple Way to Remember All Three
+
+Think about three different people giving Uvicorn instructions.
+
+### FastAPI CLI
+
+You tell FastAPI:
+
+```text
+"Here is my file."
+```
+
+```zsh
+fastapi dev server.py
+```
+
+FastAPI CLI takes care of finding the application and starting the server.
+
+---
+
+### Uvicorn CLI
+
+You tell Uvicorn:
+
+```text
+"Find the app yourself."
+```
+
+```zsh
+uvicorn server:app
+```
+
+Uvicorn interprets:
+
+```text
+server:app
+```
+
+as:
+
+```text
+server.py → app
+```
+
+---
+
+### Python code
+
+You tell Uvicorn:
+
+```text
+"Here is the app object."
+```
+
+```python
+uvicorn.run(app)
+```
+
+There is no need for Uvicorn to discover the object through:
+
+```text
+server:app
+```
+
+because Python has already created the object and passed it directly.
+
+---
+
+# 47. Final Comparison
+
+| Method      | Command/code                            | How app is provided      |
+| ----------- | --------------------------------------- | ------------------------ |
+| FastAPI CLI | `fastapi dev server.py`                 | FastAPI CLI discovers it |
+| Uvicorn CLI | `uvicorn server:app --reload`           | Import string            |
+| Python      | `python server.py` + `uvicorn.run(app)` | Actual Python object     |
+
+The core difference is:
+
+```text
+fastapi dev server.py
+        ↓
+FastAPI CLI discovers app
+
+uvicorn server:app
+        ↓
+Uvicorn imports app
+
+uvicorn.run(app)
+        ↓
+Python directly gives Uvicorn the app object
+```
+
+All three ultimately lead to the same basic architecture:
+
+```text
+                    HTTP
+                     │
+                     ▼
+                  Uvicorn
+                     │
+                    ASGI
+                     │
+                     ▼
+                  FastAPI
+                     │
+                     ▼
+              Your route function
+```
+
+So `uvicorn.run(app)` is **not a different kind of FastAPI server**.
+
+It is simply another way of **starting the same Uvicorn server programmatically from Python**.
