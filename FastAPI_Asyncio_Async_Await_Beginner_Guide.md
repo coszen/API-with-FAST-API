@@ -1229,3 +1229,16 @@ event loop handles other work
 ```
 
 That is the foundation for understanding async FastAPI, async database drivers, async HTTP clients, concurrency, and task management.
+
+Refer cheat sheet below:
+
+| Syntax             | What it is            |
+| ------------------ | --------------------- |
+| `async`            | Python keyword        |
+| `await`            | Python keyword        |
+| `asyncio`          | Python module         |
+| `asyncio.sleep()`  | Function in `asyncio` |
+| `asyncio.gather()` | Function in `asyncio` |
+| `asyncio.wait()`   | Function in `asyncio` |
+| `asyncio.await()`  | ❌ Does not exist      |
+
